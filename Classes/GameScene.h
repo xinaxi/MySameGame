@@ -27,7 +27,9 @@ class Game : public cocos2d::Scene
     
     void populate(int = defaultHeight, int = defaultWidth, int = defaultColorCount);
     void clear();
-
+    void setListeners(EventListenerTouchOneByOne *);
+    Vec2 findBlock(Sprite *);
+    void manageTouch(Sprite *);
 public:
 
     virtual bool init();

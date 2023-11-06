@@ -26,8 +26,23 @@ bool Game::init()
     background->setAnchorPoint(Vec2(0,0));
     addChild(background);
                 
-    populate(15,9,8);                
+    populate();                
 
+    auto listener = EventListenerTouchOneByOne::create();
+    listener->setSwallowTouches(true);
+    listener->onTouchBegan = [this](Touch *touch, Event *event)
+    {
+        auto target = static_cast<Sprite*>(event->getCurrentTarget());
+        Vec2 locationInNode = target->convertToNodeSpace(touch->getLocation());
+        if (Rect(0, 0, sizeOfBlock, sizeOfBlock).containsPoint(locationInNode))
+        {
+            manageTouch(target);
+            return true;
+        }
+        return false;
+    };
+
+    setListeners(listener);
 
     return true;
 }
@@ -78,4 +93,39 @@ void Game::clear()
     arr = nullptr;
     height = 0;
     width = 0;
+}
+
+void Game::setListeners(EventListenerTouchOneByOne *listener)
+{
+    for (int i = 0; i < width; i++)
+    {
+        for (int j = 0; j < height; j++)
+        {
+            _eventDispatcher->addEventListenerWithSceneGraphPriority(listener->clone(), arr[i][j]);
+        }
+    }
+}
+
+Vec2 Game::findBlock(Sprite *block)
+{
+    for (int i = 0; i < width; i++)
+    {
+        for (int j = 0; j < height; j++)
+        {
+            if (arr[i][j] == block)
+            {
+                return Vec2(i,j);
+            }
+        }
+    }
+    log("you can't be here!");
+}
+
+void Game::manageTouch(Sprite *block)
+{
+    Vec2 first = findBlock(block);
+    int i = first.x;
+    int j = first.y;
+    arr[i][j]->setOpacity(200);
+
 }
