@@ -3,8 +3,31 @@
 
 #include "cocos2d.h"
 
+USING_NS_CC;
+
+static int sizeOfBlock = 40;
+static int offset = 60;
+static int defaultHeight = 10;
+static int defaultWidth = 16;
+static int defaultColorCount = 3;
+
 class Game : public cocos2d::Scene
 {
+    Sprite ***arr = nullptr;
+    int height = 0;
+    int width = 0;
+    
+    Sprite *floor = nullptr;
+    float floorHeight = 0;
+    float floorWidth = 0;
+    
+    int colorCount = 0;
+    
+    Color3B pickColor(int);
+    
+    void populate(int = defaultHeight, int = defaultWidth, int = defaultColorCount);
+    void clear();
+
 public:
 
     virtual bool init();
