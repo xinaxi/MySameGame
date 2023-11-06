@@ -11,6 +11,7 @@ static int offset = 60;
 static int defaultHeight = 10;
 static int defaultWidth = 16;
 static int defaultColorCount = 3;
+static float speed = 3.0;
 
 class Game : public cocos2d::Scene
 {
@@ -33,7 +34,7 @@ class Game : public cocos2d::Scene
     void manageTouch(Sprite *);
     void findAll(std::set<Vec2> &, int, int, Color3B);
     void removeSet(std::set<Vec2> &);
-    void highlightSet(std::set<Vec2> &);
+    void moveBlock(int, int, int);
 
 public:
 

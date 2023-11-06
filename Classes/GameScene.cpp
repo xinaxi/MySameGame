@@ -26,7 +26,7 @@ bool Game::init()
     background->setAnchorPoint(Vec2(0,0));
     addChild(background);
                 
-    populate();                
+    populate(19,17,5);                
 
     auto listener = EventListenerTouchOneByOne::create();
     listener->setSwallowTouches(true);
@@ -128,18 +128,27 @@ void Game::manageTouch(Sprite *block)
     int j = first.y;
 
     std::set<Vec2> set;
-    log("manageTouch\nlooking for [%d][%d]", i, j);
     findAll(set, first.x, first.y, block->getColor());
     if (set.size() >= 3)
     {
         removeSet(set);
-        //highlightSet(set);
+        for (int i = 0; i < width; i++)
+        {
+            int down = 0;                       //how many empty blocks in a column
+            for (int j = 0; j < height; j++)
+            {
+                if (arr[i][j]) 
+                {
+                    moveBlock(i,j,down);
+                }
+                else down++;
+            }
+        }
     }
 }
 
 void Game::findAll(std::set<Vec2> &set, int i, int j, Color3B color)
 {
-    log("findAll for [%d][%d]", i, j);
     if (!arr[i][j] || arr[i][j]->getColor() != color)
     {
         return;
@@ -183,12 +192,12 @@ void Game::removeSet(std::set<Vec2> &set)
     }
 }
 
-void Game::highlightSet(std::set<Vec2> &set)
+void Game::moveBlock(int i, int j, int down)
 {
-    for (auto elem : set)
-    {
-        int i = elem.x;
-        int j = elem.y;
-        arr[i][j]->setOpacity(200);
-    }
+    if (!down) return;
+    int newJ = j - down;
+    arr[i][newJ] = arr[i][j];
+    arr[i][j] = nullptr;
+    auto move = MoveBy::create(down/speed, Vec2(0, -down*sizeOfBlock));
+    arr[i][newJ]->runAction(move);
 }
