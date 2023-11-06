@@ -126,6 +126,69 @@ void Game::manageTouch(Sprite *block)
     Vec2 first = findBlock(block);
     int i = first.x;
     int j = first.y;
-    arr[i][j]->setOpacity(200);
 
+    std::set<Vec2> set;
+    log("manageTouch\nlooking for [%d][%d]", i, j);
+    findAll(set, first.x, first.y, block->getColor());
+    if (set.size() >= 3)
+    {
+        removeSet(set);
+        //highlightSet(set);
+    }
+}
+
+void Game::findAll(std::set<Vec2> &set, int i, int j, Color3B color)
+{
+    log("findAll for [%d][%d]", i, j);
+    if (!arr[i][j] || arr[i][j]->getColor() != color)
+    {
+        return;
+    }
+
+    set.insert(Vec2(i,j));
+
+    //checking upper
+    if ((j + 1 < height) && !set.count(Vec2(i,j+1)))
+    {
+        findAll(set, i, j + 1, color);
+    }
+
+    //lower
+    if ((j > 0) && !set.count(Vec2(i,j-1)))
+    {
+        findAll(set, i, j - 1, color);
+    }
+
+    //left
+    if ((i > 0) && !set.count(Vec2(i-1,j)))
+    {
+        findAll(set, i - 1, j, color);
+    }
+
+    //right
+    if ((i + 1 < width) && !set.count(Vec2(i+1,j)))
+    {
+        findAll(set, i + 1, j, color);
+    }
+}
+
+void Game::removeSet(std::set<Vec2> &set)
+{
+    for (auto elem : set)
+    {
+        int i = elem.x;
+        int j = elem.y;
+        arr[i][j]->removeFromParent();
+        arr[i][j] = nullptr;
+    }
+}
+
+void Game::highlightSet(std::set<Vec2> &set)
+{
+    for (auto elem : set)
+    {
+        int i = elem.x;
+        int j = elem.y;
+        arr[i][j]->setOpacity(200);
+    }
 }

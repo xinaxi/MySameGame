@@ -2,6 +2,7 @@
 #define __GAME_SCENE_H__
 
 #include "cocos2d.h"
+#include <set>
 
 USING_NS_CC;
 
@@ -30,6 +31,10 @@ class Game : public cocos2d::Scene
     void setListeners(EventListenerTouchOneByOne *);
     Vec2 findBlock(Sprite *);
     void manageTouch(Sprite *);
+    void findAll(std::set<Vec2> &, int, int, Color3B);
+    void removeSet(std::set<Vec2> &);
+    void highlightSet(std::set<Vec2> &);
+
 public:
 
     virtual bool init();
