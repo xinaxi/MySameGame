@@ -33,7 +33,8 @@ bool Game::init()
     background->setPosition(0,0);
     background->setAnchorPoint(Vec2(0,0));
     addChild(background);
-                
+    offset = visibleSize.width/30;
+
     //listener for all the blocks in the game
     listener = EventListenerTouchOneByOne::create();
     listener->setSwallowTouches(true);
@@ -51,7 +52,6 @@ bool Game::init()
     };
     listener->retain();     //otherwise autoreleasePool would erase it
     
-    populate();
 
     //setup ui till the end of that method
     auto interface = Node::create();
@@ -65,41 +65,45 @@ bool Game::init()
     auto labelHeight = Label::createWithSystemFont(strHeight, fontType, fontSize);
     labelHeight->setAnchorPoint({0,1});
     labelHeight->setPosition({xPos,0});
-    xPos += labelHeight->getContentSize().width + offset;
+    xPos += labelHeight->getContentSize().width + offset/2;
     interface->addChild(labelHeight);
       
-    auto textFieldHeight = ui::TextField::create(std::to_string(defaultHeight),fontType,fontSize);
+    auto textFieldHeight = ui::TextField::create(std::to_string(minHeight)+" .. "+std::to_string(maxHeight),fontType,fontSize);
     textFieldHeight->setAnchorPoint({0,1});
     textFieldHeight->setPosition({xPos,0});
-    xPos += 2*offset;
+    xPos += 3*offset;
     interface->addChild(textFieldHeight);
 
 
     auto labelWidth = Label::createWithSystemFont(strWidth, fontType, fontSize);
     labelWidth->setAnchorPoint({0,1});
     labelWidth->setPosition({xPos,0});
-    xPos += labelWidth->getContentSize().width + offset;
+    xPos += labelWidth->getContentSize().width + offset/2;
     interface->addChild(labelWidth);
       
-    auto textFieldWidth = ui::TextField::create(std::to_string(defaultWidth),fontType,fontSize);
+    auto textFieldWidth = ui::TextField::create(std::to_string(minWidth)+" .. "+std::to_string(maxWidth),fontType,fontSize);
     textFieldWidth->setAnchorPoint({0,1});
     textFieldWidth->setPosition({xPos,0});
-    xPos += 2*offset;
+    xPos += 3*offset;
     interface->addChild(textFieldWidth);
 
 
     auto labelColors = Label::createWithSystemFont(strColors, fontType, fontSize);
     labelColors->setAnchorPoint({0,1});
     labelColors->setPosition({xPos,0});
-    xPos += labelColors->getContentSize().width + offset;
+    xPos += labelColors->getContentSize().width + offset/2;
     interface->addChild(labelColors);
       
-    auto textFieldColors = ui::TextField::create(std::to_string(defaultColorCount),fontType,fontSize);
+    auto textFieldColors = ui::TextField::create(std::to_string(minColorCount)+" .. "+std::to_string(maxColorCount),fontType,fontSize);
     textFieldColors->setAnchorPoint({0,1});
     textFieldColors->setPosition({xPos,0});
-    xPos += 2*offset;
+    xPos += 5*offset;
     interface->addChild(textFieldColors);
 
+    textFieldScore = ui::TextField::create("",fontType,fontSize);
+    textFieldScore->setAnchorPoint({0,1});
+    textFieldScore->setPosition({xPos,0});
+    interface->addChild(textFieldScore);
 
     auto button = ui::Button::create();
     button->setTitleText(strStart);
@@ -139,6 +143,8 @@ bool Game::init()
         }
     });
 
+    populate();
+
     return true;
 }
 
@@ -147,6 +153,8 @@ void Game::populate(int height, int width, int colors)
     this->height = height;
     this->width = width;
     colorCount = colors;
+    score = 0;
+    setScore();
     floorHeight = height*sizeOfBlock;
     floorWidth = width*sizeOfBlock;
     floor = Sprite::create("background.png", Rect(0,0,floorWidth,floorHeight));     //black grid just right the size of all blocks
@@ -298,6 +306,8 @@ void Game::removeSet(std::set<Vec2> &set)
         arr[i][j]->removeFromParent();
         arr[i][j] = nullptr;
     }
+    score += set.size()*(set.size()-1);
+    setScore();
 }
 
 void Game::moveBlock(int i, int j, int down)
@@ -333,4 +343,9 @@ bool Game::check()
         }   
     }
     return false;
+}
+
+void Game::setScore()
+{
+    textFieldScore->setString(std::to_string(score));
 }

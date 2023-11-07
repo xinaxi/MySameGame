@@ -9,7 +9,6 @@
 USING_NS_CC;
 
 static int sizeOfBlock = 40;
-static int offset = 60;
 static int defaultHeight = 10;
 static int defaultWidth = 16;
 static int defaultColorCount = 3;
@@ -34,13 +33,16 @@ class Game : public cocos2d::Scene
     Sprite ***arr = nullptr;
     int height = 0;
     int width = 0;
+    int score = 0;
+    ui::TextField *textFieldScore = nullptr;
 
     EventListenerTouchOneByOne *listener = nullptr;
     
     Sprite *floor = nullptr;
     float floorHeight = 0;
     float floorWidth = 0;
-    
+    int offset = 0;
+
     int colorCount = 0;
     
     Color3B pickColor(int);
@@ -55,6 +57,8 @@ class Game : public cocos2d::Scene
     void moveBlock(int, int, int);
     void resize(int = defaultHeight, int = defaultWidth, int = defaultColorCount);
     bool check();
+    void setScore();
+    
 public:
 
     virtual bool init();
