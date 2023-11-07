@@ -2,6 +2,13 @@
 
 USING_NS_CC;
 
+int clamp(int value, int min, int max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
 Color3B Game::pickColor(int i)
 {
     if (i == 1) return Color3B::RED;
@@ -20,18 +27,19 @@ bool Game::init()
     if (!Scene::init()) return false;
     
     auto visibleSize = Director::getInstance()->getVisibleSize();
-        
+
+    //blueish background on full screen
     auto background = Sprite::create("background.png", Rect(0,0,visibleSize.width,visibleSize.height));
     background->setPosition(0,0);
     background->setAnchorPoint(Vec2(0,0));
     addChild(background);
                 
-    populate(19,17,5);                
-
-    auto listener = EventListenerTouchOneByOne::create();
+    //listener for all the blocks in the game
+    listener = EventListenerTouchOneByOne::create();
     listener->setSwallowTouches(true);
     listener->onTouchBegan = [this](Touch *touch, Event *event)
     {
+        //checking the intersection with block
         auto target = static_cast<Sprite*>(event->getCurrentTarget());
         Vec2 locationInNode = target->convertToNodeSpace(touch->getLocation());
         if (Rect(0, 0, sizeOfBlock, sizeOfBlock).containsPoint(locationInNode))
@@ -41,8 +49,95 @@ bool Game::init()
         }
         return false;
     };
+    listener->retain();     //otherwise autoreleasePool would erase it
+    
+    populate();
 
-    setListeners(listener);
+    //setup ui till the end of that method
+    auto interface = Node::create();
+    interface->setAnchorPoint({0,1});
+    interface->setPosition(0,visibleSize.height - offset/5);
+    float xPos = offset;                        //position to put next widget
+    float fontSize = visibleSize.height/30;
+    background->addChild(interface);
+
+
+    auto labelHeight = Label::createWithSystemFont(strHeight, fontType, fontSize);
+    labelHeight->setAnchorPoint({0,1});
+    labelHeight->setPosition({xPos,0});
+    xPos += labelHeight->getContentSize().width + offset;
+    interface->addChild(labelHeight);
+      
+    auto textFieldHeight = ui::TextField::create(std::to_string(defaultHeight),fontType,fontSize);
+    textFieldHeight->setAnchorPoint({0,1});
+    textFieldHeight->setPosition({xPos,0});
+    xPos += 2*offset;
+    interface->addChild(textFieldHeight);
+
+
+    auto labelWidth = Label::createWithSystemFont(strWidth, fontType, fontSize);
+    labelWidth->setAnchorPoint({0,1});
+    labelWidth->setPosition({xPos,0});
+    xPos += labelWidth->getContentSize().width + offset;
+    interface->addChild(labelWidth);
+      
+    auto textFieldWidth = ui::TextField::create(std::to_string(defaultWidth),fontType,fontSize);
+    textFieldWidth->setAnchorPoint({0,1});
+    textFieldWidth->setPosition({xPos,0});
+    xPos += 2*offset;
+    interface->addChild(textFieldWidth);
+
+
+    auto labelColors = Label::createWithSystemFont(strColors, fontType, fontSize);
+    labelColors->setAnchorPoint({0,1});
+    labelColors->setPosition({xPos,0});
+    xPos += labelColors->getContentSize().width + offset;
+    interface->addChild(labelColors);
+      
+    auto textFieldColors = ui::TextField::create(std::to_string(defaultColorCount),fontType,fontSize);
+    textFieldColors->setAnchorPoint({0,1});
+    textFieldColors->setPosition({xPos,0});
+    xPos += 2*offset;
+    interface->addChild(textFieldColors);
+
+
+    auto button = ui::Button::create();
+    button->setTitleText(strStart);
+    button->setTitleFontSize(fontSize);
+    button->setAnchorPoint({1,1});
+    button->setPosition({visibleSize.width - offset, 0});
+    interface->addChild(button);
+
+    button->addTouchEventListener([=](Ref* sender, ui::Widget::TouchEventType type){
+        if (type == ui::Widget::TouchEventType::ENDED)
+        {
+            auto tryStoi = [](ui::TextField* textField, int defaultValue)
+            {
+                try
+                {
+                    return std::stoi(textField->getString());
+                }
+                catch(...)
+                {
+                    return defaultValue;
+                }
+            };
+            
+            int h = tryStoi(textFieldHeight, defaultHeight);
+            int w = tryStoi(textFieldWidth, defaultWidth);
+            int c = tryStoi(textFieldColors, defaultColorCount);
+
+            h = clamp(h, minHeight, maxHeight);
+            w = clamp(w, minWidth, maxWidth);
+            c = clamp(c, minColorCount, maxColorCount);
+
+            textFieldHeight->setString(std::to_string(h));
+            textFieldWidth->setString(std::to_string(w));
+            textFieldColors->setString(std::to_string(c));
+
+            this->resize(h, w, c);
+        }
+    });
 
     return true;
 }
@@ -54,30 +149,32 @@ void Game::populate(int height, int width, int colors)
     colorCount = colors;
     floorHeight = height*sizeOfBlock;
     floorWidth = width*sizeOfBlock;
-    floor = Sprite::create("background.png", Rect(0,0,floorWidth,floorHeight));
+    floor = Sprite::create("background.png", Rect(0,0,floorWidth,floorHeight));     //black grid just right the size of all blocks
     floor->setColor(Color3B::BLACK);
 
     arr = new Sprite**[width];
-        for (int i = 0; i < width; i++)
+    for (int i = 0; i < width; i++)
+    {
+        arr[i] = new Sprite*[height];
+        for (int j = 0; j < height; j++)
         {
-            arr[i] = new Sprite*[height];
-            for (int j = 0; j < height; j++)
-            {
-                Sprite *sprite = Sprite::create("block.png");
-                sprite->setColor(pickColor(RandomHelper::random_int(1,colorCount)));
-                sprite->setPosition(Vec2(sizeOfBlock*i, sizeOfBlock*j));
-                sprite->setAnchorPoint(Vec2(0,0));
-                
-                floor->addChild(sprite);
-                arr[i][j] = sprite;
-            }
+            Sprite *sprite = Sprite::create("block.png");
+            sprite->setColor(pickColor(RandomHelper::random_int(1,colorCount)));
+            sprite->setPosition(Vec2(sizeOfBlock*i, sizeOfBlock*j));
+            sprite->setAnchorPoint(Vec2(0,0));
+            
+            floor->addChild(sprite);
+            arr[i][j] = sprite;
         }
-        auto visibleSize = Director::getInstance()->getVisibleSize();
-        float scaleFactor = MIN((visibleSize.width - 2*offset)/floorWidth,
-                                (visibleSize.height - 2*offset)/floorHeight);
-        floor->setScale(scaleFactor);
-        floor->setPosition(visibleSize.width/2,visibleSize.height/2);
-        addChild(floor);
+    }
+    //we want some offset from the screen edges
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    float scaleFactor = MIN((visibleSize.width - 2*offset)/floorWidth,
+                            (visibleSize.height - 2*offset)/floorHeight);    //depends on which side is closer to the edge
+    floor->setScale(scaleFactor);
+    floor->setPosition(visibleSize.width/2,visibleSize.height/2);       //centering
+    addChild(floor);
+    setListeners();
 }
 
 void Game::clear()
@@ -87,15 +184,15 @@ void Game::clear()
     floor = nullptr;
     for (int i = 0; i < width; i++)
     {
-        delete(arr[i]);
+        delete[] arr[i];
     }
-    delete(arr);
+    delete[] arr;
     arr = nullptr;
     height = 0;
     width = 0;
 }
 
-void Game::setListeners(EventListenerTouchOneByOne *listener)
+void Game::setListeners()
 {
     for (int i = 0; i < width; i++)
     {
@@ -106,6 +203,7 @@ void Game::setListeners(EventListenerTouchOneByOne *listener)
     }
 }
 
+//finding coordinates in our own array
 Vec2 Game::findBlock(Sprite *block)
 {
     for (int i = 0; i < width; i++)
@@ -127,11 +225,14 @@ void Game::manageTouch(Sprite *block)
     int i = first.x;
     int j = first.y;
 
-    std::set<Vec2> set;
+    //launch recursive function to find a group of same color
+    std::set<Vec2> set;     //remembering coordinates of blocks
     findAll(set, first.x, first.y, block->getColor());
     if (set.size() >= 3)
     {
         removeSet(set);
+
+        //move all that were upper the group
         for (int i = 0; i < width; i++)
         {
             int down = 0;                       //how many empty blocks in a column
@@ -145,8 +246,15 @@ void Game::manageTouch(Sprite *block)
             }
         }
     }
+
+    //if no more moves avalible restart the game
+    if (!check())
+    {
+        resize(height, width, colorCount);
+    }
 }
 
+//finding the group of blocks with the same color
 void Game::findAll(std::set<Vec2> &set, int i, int j, Color3B color)
 {
     if (!arr[i][j] || arr[i][j]->getColor() != color)
@@ -154,7 +262,7 @@ void Game::findAll(std::set<Vec2> &set, int i, int j, Color3B color)
         return;
     }
 
-    set.insert(Vec2(i,j));
+    set.insert(Vec2(i,j));    //only unique values are getting in
 
     //checking upper
     if ((j + 1 < height) && !set.count(Vec2(i,j+1)))
@@ -200,4 +308,29 @@ void Game::moveBlock(int i, int j, int down)
     arr[i][j] = nullptr;
     auto move = MoveBy::create(down/speed, Vec2(0, -down*sizeOfBlock));
     arr[i][newJ]->runAction(move);
+}
+
+void Game::resize(int newHeight, int newWidth, int newColors)
+{
+    clear();
+    populate(newHeight, newWidth, newColors);
+}
+
+//check if there are still moves
+bool Game::check()
+{
+    for (int i = 0; i < width; i++)
+    {
+        for (int j = 0; j < height; j++)
+        {
+            std::set<Vec2> set;
+            if (!arr[i][j]) continue;
+            findAll(set, i, j, arr[i][j]->getColor());
+            if (set.size() >= 3)
+            {
+                return true;
+            }
+        }   
+    }
+    return false;
 }
